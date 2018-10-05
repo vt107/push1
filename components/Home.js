@@ -12,6 +12,7 @@ import { NotificationOpen } from 'react-native-firebase/notifications';
 class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
+    firebase.messaging().subscribeToTopic('rain');
     this.state = {
       listNotify: false
     }
