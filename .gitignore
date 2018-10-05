@@ -58,3 +58,4 @@ buck-out/
 /android/app/
 /ios/Index/
 /ios/Pods
+.vscode

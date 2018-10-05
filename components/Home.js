@@ -11,7 +11,6 @@ import bsStyle from '../assets/BsStyle';
 class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
-    firebase.messaging().subscribeToTopic('rain');
     this.state = {
       listNotify: false
     }
@@ -27,14 +26,14 @@ class HomeScreen extends React.Component {
     firebase.messaging().hasPermission()
       .then(enabled => {
         if (enabled) {
+          firebase.messaging().subscribeToTopic('rain');
         } else {
           firebase.messaging().requestPermission()
             .then(() => {
-              alert("You will receive new notifications!")
+              firebase.messaging().subscribeToTopic('rain');
             })
             .catch(error => {
               console.log(error);
-              alert('You must allow showing notification!');
             });
         }
       });
