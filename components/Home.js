@@ -21,7 +21,7 @@ class HomeScreen extends React.Component {
     title: 'Home',
   };
 
-  componentDidMount() {
+ async componentDidMount() {
     console.log('Component did mount');
     // Check permission
     firebase.messaging().hasPermission()
