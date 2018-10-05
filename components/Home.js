@@ -7,6 +7,7 @@ import RowNotify from './RowNotify';
 import { RemoteMessage } from 'react-native-firebase';
 
 import bsStyle from '../assets/BsStyle';
+import { NotificationOpen } from 'react-native-firebase/notifications';
 
 class HomeScreen extends React.Component {
   constructor(props) {
@@ -20,7 +21,7 @@ class HomeScreen extends React.Component {
     title: 'Home',
   };
 
- async componentDidMount() {
+  componentDidMount() {
     console.log('Component did mount');
     // Check permission
     firebase.messaging().hasPermission()
@@ -53,31 +54,67 @@ class HomeScreen extends React.Component {
           let nDetail = new NotifyPayload(data);
           if (res && res.length > 0) {
             let tJson = JSON.parse(res);
-            tJson.push(nDetail);
-            AsyncStorage.setItem('list_notifications', JSON.stringify(tJson))
-              .then(DeviceEventEmitter.emit('notifyChange'));
+            if (nDetail.key && !tJson.find((notif) => {return notif.key == nDetail.key} )) {
+              tJson.push(nDetail);
+              AsyncStorage.setItem('list_notifications', JSON.stringify(tJson))
+                .then(DeviceEventEmitter.emit('notifyChange'));
+            }
           } else {
             AsyncStorage.setItem('list_notifications', JSON.stringify([nDetail]))
               .then(DeviceEventEmitter.emit('notifyChange'));
           }
-          const notification = new firebase.notifications.Notification()
-            .setNotificationId('notificationId')
-            .setTitle(nDetail.title)
-            .setBody(nDetail.message)
-            .setData(nDetail)
-            .android.setChannelId('rain')
-            .android.setSmallIcon('ic_launcher');
-
-          firebase.notifications()
-            .displayNotification(notification)
-            .then(firebase.notifications().removeDeliveredNotification(notification.notificationId));
         })
         .catch(error => {
           console.log('Error handling background message: ', error);
         });
     });
+
+    this.notifOpen = firebase.notifications().getInitialNotification((notificationOpen: NotificationOpen))
+    if (notificationOpen) {
+      // User click open notification when app not opened yet
+      console.log('User click open notification when app not opened yet');
+      const action = notificationOpen.action;
+      const notification: Notification = notificationOpen.notification;
+      const notifyKey = notification.data.key;
+      const { navigate } = this.props.navigation;
+      navigate('Detail', {key: notifyKey});
+      firebase.notifications().removeDeliveredNotification(notification.notificationId);
+    }
+
+    this.notificationDisplayedListener = firebase.notifications().onNotificationDisplayed((notification: Notification) => {
+
+      console.log('Process notification in notificationDisplayedListener');
+    });
+    this.notificationListener = firebase.notifications().onNotification((notification: Notification) => {
+      console.log('Process and display notification when app is opened');
+      // Process notification as required
+      notification
+        .android.setChannelId('rain')
+        .android.setSmallIcon('ic_launcher');
+      firebase.notifications()
+        .displayNotification(notification);
+    });
+    const channel = new firebase.notifications.Android.Channel('rain', 'Weather Rain', firebase.notifications.Android.Importance.Max)
+      .setDescription('Get weather information info');
+    // Create the channel
+    firebase.notifications().android.createChannel(channel);
+
+    // When user click open notification
+    this.notificationOpenedListener = firebase.notifications().onNotificationOpened((notificationOpen: NotificationOpen) => {
+      console.log('When user click open notification, app is opened');
+      // Get the action triggered by the notification being opened
+      const action = notificationOpen.action;
+      // Get information about the notification that was opened
+      const notification: Notification = notificationOpen.notification;
+      const notifyKey = notification.data.key;
+      const { navigate } = this.props.navigation;
+      navigate('Detail', {key: notifyKey});
+      firebase.notifications().removeDeliveredNotification(notification.notificationId);
+
+    });
   }
   componentWillUnmount() {
+    this.notifOpen();
     DeviceEventEmitter.removeListener('notifyChange');
     this.notificationDisplayedListener();
     this.notificationListener();
@@ -119,13 +156,11 @@ class HomeScreen extends React.Component {
 
   _resetNotify() {
     AsyncStorage.setItem('list_notifications', '').then(() => {
-      alert('Reset notifications successfully');
       DeviceEventEmitter.emit('notifyChange');
     })
   }
 
   componentWillMount() {
-    console.log('Component will mount');
     this.getNewestNotifications();
   }
 
