@@ -16,7 +16,7 @@ class ListNotificationScreen extends React.Component {
       if (value !== null) {
         let listNotify = JSON.parse(value);
         if (listNotify.length > 0) {
-          this.setState({listNotify: listNotify})
+          this.setState({listNotify: listNotify.reverse()})
         } else {
           this.props.navigation.navigate('Home');
         }
