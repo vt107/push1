@@ -50,7 +50,6 @@ class ListNotificationScreen extends React.Component {
   render() {
     const { navigate } = this.props.navigation;
     if (this.state.listNotify !== false) {
-      console.log('ListView: ', this.state.listNotify);
       return (
         <View style={listNotifyStyle.container}>
           <FlatList

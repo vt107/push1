@@ -1,5 +1,5 @@
 import React from 'react';
-import {AsyncStorage, View, Text, TouchableHighlight, Alert, FlatList, DeviceEventEmitter} from 'react-native';
+import {AsyncStorage, View, Text, TouchableHighlight, Alert, FlatList, DeviceEventEmitter, Platform} from 'react-native';
 import firebase from 'react-native-firebase';
 import { Notification, NotificationOpen } from 'react-native-firebase';
 import NotifyPayload from './NotifyPayload';
@@ -27,7 +27,9 @@ class HomeScreen extends React.Component {
     let listNotify = JSON.parse(listString);
     let notify = new NotifyPayload(tNotify.data);
     if (listNotify && listNotify.length > 0) {
-      listNotify.push(notify);
+      if (!listNotify.find(notif => notif.key == notify.key)) {
+        listNotify.push(notify);
+      }
     } else {
       listNotify = [notify];
     }
@@ -37,6 +39,7 @@ class HomeScreen extends React.Component {
   }
 
   componentDidMount() {
+    console.log('didmount');
     // Check permission
     firebase.messaging().hasPermission()
       .then(enabled => {
@@ -80,15 +83,17 @@ class HomeScreen extends React.Component {
             });
         }
       });
-    
+    if (Platform.OS == 'android') {
     const channel = new firebase.notifications.Android.Channel('rain', 'Weather Rain', firebase.notifications.Android.Importance.Max)
       .setDescription('Get weather information info');
     // Create the channel
     firebase.notifications().android.createChannel(channel);
   }
+    
+  }
   componentWillUnmount() {
     DeviceEventEmitter.removeListener('notifyChange');
-    this.notificationListener();
+    // this.notificationListener();
     this.messageListener();
     DeviceEventEmitter.removeAllListeners();
     this._isMounted = false;
