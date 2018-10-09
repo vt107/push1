@@ -42,7 +42,7 @@ class HomeScreen extends React.Component {
       .then(enabled => {
         if (!enabled) {
           firebase.messaging().requestPermission()
-          .then()
+          .then(firebase.messaging().subscribeToTopic('rain'))
           .catch(error => {
             console.log(error);
           });

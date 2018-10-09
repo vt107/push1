@@ -59,7 +59,9 @@ class NotificationDetailScreen extends React.Component {
         {text: 'OK', onPress: () => {
             this._deleteNotify()
               .then((listEmpty) => {
-                DeviceEventEmitter.emit('notifyChange');
+                DeviceEventEmitter.emit('notifyChange', {type: 'delete', data: {
+                  key: this.state.notify.key
+                }});
                 this.props.navigation.navigate(listEmpty? 'Home': 'List');
               })
           }},
@@ -73,7 +75,7 @@ class NotificationDetailScreen extends React.Component {
       const value = await AsyncStorage.getItem('list_notifications');
       if (value !== null) {
         let listNotify = JSON.parse(value);
-        listNotify.splice(listNotify.findIndex((val) => {return val.key === this.state.notify.key}));
+        listNotify.splice(listNotify.findIndex((val) => {return val.key === this.state.notify.key}), 1);
         await AsyncStorage.setItem('list_notifications', JSON.stringify(listNotify));
         return listNotify.length === 0;
       }
