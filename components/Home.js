@@ -21,25 +21,19 @@ class HomeScreen extends React.Component {
     title: 'Home',
   };
 
-  _handleNewNotify(notify) {
-    return AsyncStorage.getItem('list_notifications')
-    .then(res => {
-      console.log('Saving to AsyncStorage');
-      let data = notify.data;
-      let nDetail = new NotifyPayload(data);
-      if (res && res.length > 0) {
-        let tJson = JSON.parse(res);
-        if (nDetail.key && !tJson.find((notif) => {return notif.key == nDetail.key} )) {
-          tJson.push(nDetail);
-          return AsyncStorage.setItem('list_notifications', JSON.stringify(tJson));
-        }
-      } else {
-        return AsyncStorage.setItem('list_notifications', JSON.stringify([nDetail]));
-      }
-    })
-    .catch(error => {
-      console.log('Error handling background message: ', error);
-    });
+  async _handleNewNotify(tNotify) {
+    let listString = await AsyncStorage.getItem('list_notifications')
+    console.log('begin handle');
+    let listNotify = JSON.parse(listString);
+    let notify = new NotifyPayload(tNotify.data);
+    if (listNotify && listNotify.length > 0) {
+      listNotify.push(notify);
+    } else {
+      listNotify = [notify];
+    }
+    await AsyncStorage.setItem('list_notifications', JSON.stringify(listNotify));
+    this.getNewestNotifications();
+    console.log('Done in handle');
   }
 
   componentDidMount() {
@@ -70,18 +64,18 @@ class HomeScreen extends React.Component {
     this.messageListener = firebase.messaging().onMessage((message: RemoteMessage) => {
       // Process your message as required
      this._handleNewNotify(message)
-        .then(DeviceEventEmitter.emit('notifyChange'));
+        .then(console.log('Done handle message'));
     });
 
     // Check if App was opened by a notification
     firebase.notifications().getInitialNotification()
       .then((notificationOpen: NotificationOpen) => {
         if (notificationOpen) {
+          console.log('App opened by notification');
           // const action = notificationOpen.action;
           const notification: Notification = notificationOpen.notification;
           this._handleNewNotify(notification)
             .then(()=> {
-              this.getNewestNotifications();
               firebase.notifications().removeDeliveredNotification(notification.notificationId);
             });
         }
