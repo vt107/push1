@@ -97,7 +97,10 @@ class NotificationDetailScreen extends React.Component {
             this.setState({notify: thisNotify});
             if (!thisNotify.seen) {
               listNotify.find(notify => notify.key === notifyKey).seen = true;
-              AsyncStorage.setItem('list_notifications', JSON.stringify(listNotify));
+              AsyncStorage.setItem('list_notifications', JSON.stringify(listNotify))
+              .then( DeviceEventEmitter.emit('notifyChange', {type: 'update_seen', data: {
+                key: this.state.notify.key
+              }}));
             }
           } else {
             alert('This notify is deleted!');

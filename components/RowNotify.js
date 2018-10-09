@@ -13,13 +13,13 @@ class RowNotify extends React.Component {
       return(
         <View>
           <TouchableHighlight style={rowStyles.container} onPress={() => this.props.navigate('Detail', {key: notify.key})}
-                              underlayColor='#e8e8e8'>
+                              underlayColor='#F0F0D0'>
             <View>
-              <Text style={rowStyles.mainInfo}>[{notify.topicText}] {notify.title}</Text>
-              <Text style={rowStyles.time}>{notify.time}</Text>
+              <Text style={[rowStyles.mainInfo, notify.seen? {}: rowStyles.new]}>[{notify.topicText}] {notify.title}</Text>
+              <Text style={[rowStyles.time, notify.seen? {}: rowStyles.new]}>{notify.time}</Text>
             </View>
           </TouchableHighlight>
-          <Divider style={{ backgroundColor: 'orange' }} />
+          <Divider style={{ backgroundColor: '#999966' }} />
         </View>
       )
     } else {
@@ -36,7 +36,10 @@ const rowStyles = {
     fontSize: 18,
   },
   time: {
-    fontSize: 12,
+    fontSize: 12
+  },
+  new: {
+    color: 'green'
   }
 };
 
