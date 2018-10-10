@@ -3,7 +3,7 @@ import {StyleSheet} from 'react-native';
 const bsStyle = StyleSheet.create({
   btn: {
     marginBottom: 5,
-    width: 200,
+    minWidth: 100,
     alignItems: 'center',
     borderRadius: 2
   },
@@ -22,10 +22,18 @@ const bsStyle = StyleSheet.create({
   },
   emptyStatusCover: {
     alignItems: 'center',
-    margin: 15
+    margin: 15,
+    marginTop: 30,
+    fontSize: 20
   },
   emptyStatus: {
 
+  },
+  textCenter: {
+    textAlign: 'center'
+  },
+  cWhite: {
+    color: 'white'
   }
 });
 

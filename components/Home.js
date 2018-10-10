@@ -11,7 +11,6 @@ import bsStyle from '../assets/BsStyle';
 class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
-    firebase.messaging().subscribeToTopic('rain');
     this.state = {
       listNotify: false
     }
@@ -34,25 +33,31 @@ class HomeScreen extends React.Component {
       listNotify = [notify];
     }
     await AsyncStorage.setItem('list_notifications', JSON.stringify(listNotify));
+    DeviceEventEmitter.emit('notifyChange', {type: 'add', data: {
+      key: notify.key
+    }});
     this.getNewestNotifications();
     console.log('Done in handle');
   }
 
   componentDidMount() {
-    console.log('didmount');
+    console.log('didmounttt');
     // Check permission
     firebase.messaging().hasPermission()
       .then(enabled => {
         if (!enabled) {
           firebase.messaging().requestPermission()
-          .then(firebase.messaging().subscribeToTopic('rain'))
+          .then(() => {
+            console.log('subcribe after reqest permisssion');
+            firebase.messaging().subscribeToTopic('rain')
+          })
           .catch(error => {
             console.log(error);
           });
+        } else {
+          firebase.messaging().subscribeToTopic('rain');
+          console.log('Subcribed!');
         }
-      }).then(() => {
-        firebase.messaging().subscribeToTopic('rain');
-        console.log('Subcribed!');
       })
       .catch(error => {
         console.log(error);
@@ -71,16 +76,14 @@ class HomeScreen extends React.Component {
     });
 
     // Check if App was opened by a notification
-    firebase.notifications().getInitialNotification()
+    this.backgroundNotifyListener = firebase.notifications().getInitialNotification()
       .then((notificationOpen: NotificationOpen) => {
         if (notificationOpen) {
           console.log('App opened by notification');
           // const action = notificationOpen.action;
           const notification: Notification = notificationOpen.notification;
-          this._handleNewNotify(notification)
-            .then(()=> {
-              firebase.notifications().removeDeliveredNotification(notification.notificationId);
-            });
+          firebase.notifications().removeDeliveredNotification(notification.notificationId);
+          this._handleNewNotify(notification);
         }
       });
     if (Platform.OS == 'android') {
@@ -89,11 +92,21 @@ class HomeScreen extends React.Component {
     // Create the channel
     firebase.notifications().android.createChannel(channel);
   }
-    
+  
+  this.notificationListener = firebase.notifications().onNotification((notification: Notification) => {
+    console.log('Process and display notification when app is opened');
+    // Process notification as required
+    notification
+      .android.setChannelId('rain')
+      .android.setSmallIcon('ic_launcher');
+    firebase.notifications()
+      .displayNotification(notification);
+  });
   }
   componentWillUnmount() {
     DeviceEventEmitter.removeListener('notifyChange');
-    // this.notificationListener();
+    this.backgroundNotifyListener();
+    this.notificationListener();
     this.messageListener();
     DeviceEventEmitter.removeAllListeners();
     this._isMounted = false;
@@ -148,17 +161,15 @@ class HomeScreen extends React.Component {
               }
               keyExtractor={(item) => item.key}
             />
-            <View style={{alignItems: 'center', marginTop: 10}}>
-              <TouchableHighlight underlayColor="white" onPress={() => navigate('List')}>
-                <View style={[bsStyle.btn, bsStyle.btnSuccess]}>
-                  <Text style={bsStyle.btnText}>See All</Text>
+            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'center'}}>
+              <TouchableHighlight underlayColor="white" style={[bsStyle.btn, homeStyle.btn, bsStyle.btnSuccess]} onPress={() => navigate('List')}>
+                <View style={bsStyle.textCenter}>
+                  <Text style={bsStyle.cWhite}>See All</Text>
                 </View>
               </TouchableHighlight>
-            </View>
-            <View style={{alignItems: 'center', marginTop: 10}}>
-              <TouchableHighlight underlayColor="white" onPress={() => this._confirmResetNotify()}>
-                <View style={[bsStyle.btn, bsStyle.btnInfo]}>
-                  <Text style={bsStyle.btnText}>Reset</Text>
+              <TouchableHighlight underlayColor="white" style={[bsStyle.btn, homeStyle.btn, bsStyle.btnSuccess, homeStyle.btnReset]} onPress={() => this._confirmResetNotify()}>
+                <View style={bsStyle.textCenter}>
+                  <Text style={bsStyle.cWhite}>Reset</Text>
                 </View>
               </TouchableHighlight>
             </View>
@@ -170,6 +181,19 @@ class HomeScreen extends React.Component {
     } else {
       return (<View style={bsStyle.emptyStatusCover}><Text>Loading...</Text></View>)
     }
+  }
+}
+
+var homeStyle = {
+  btn: {
+    marginTop: 10,
+    width: 120,
+    height: 40,
+    justifyContent: 'center'
+  },
+  btnReset: {
+    marginLeft: 20,
+    backgroundColor: '#dc3545',
   }
 }
 
