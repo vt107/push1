@@ -8,7 +8,7 @@ import { RemoteMessage } from 'react-native-firebase';
 
 import bsStyle from '../assets/BsStyle';
 
-class HomeScreen extends React.Component {
+export default class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -84,7 +84,7 @@ class HomeScreen extends React.Component {
           .then(this.getNewestNotifications());
         }
       });
-    if (Platform.OS == 'android') {
+    if (Platform.OS === 'android') {
     const channel = new firebase.notifications.Android.Channel('rain', 'Weather Rain', firebase.notifications.Android.Importance.Max)
       .setDescription('Get weather information info');
     // Create the channel
@@ -112,6 +112,7 @@ class HomeScreen extends React.Component {
     this.messageListener();
     DeviceEventEmitter.removeAllListeners();
     this._isMounted = false;
+    */
   }
 
   getNewestNotifications(limit = 5) {
@@ -180,7 +181,7 @@ class HomeScreen extends React.Component {
   }
 }
 
-var homeStyle = {
+let homeStyle = {
   btn: {
     marginTop: 10,
     width: 120,
@@ -191,6 +192,4 @@ var homeStyle = {
     marginLeft: 20,
     backgroundColor: '#dc3545',
   }
-}
-
-export default HomeScreen;
+};

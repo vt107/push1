@@ -5,6 +5,8 @@ import ListNotificationScreen from './components/ListNotification.js';
 import NotificationDetailScreen from './components/NotificationDetail.js';
 import SettingsScreen from './components/Settings.js';
 
+import SettingsScreen from './components/Settings.js';
+
 const App = createStackNavigator({
   Home: { screen: HomeScreen },
   List: { screen: ListNotificationScreen　},
