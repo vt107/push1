@@ -1,5 +1,5 @@
 import React from 'react';
-import {AsyncStorage, View, Text, TouchableHighlight, Alert, FlatList, DeviceEventEmitter, Platform} from 'react-native';
+import {AsyncStorage, View, Text, TouchableHighlight, Alert, FlatList, DeviceEventEmitter, Platform, ActivityIndicator} from 'react-native';
 import firebase from 'react-native-firebase';
 import { Notification, NotificationOpen } from 'react-native-firebase';
 import NotifyPayload from './NotifyPayload';
@@ -20,43 +20,40 @@ class HomeScreen extends React.Component {
     title: 'Home',
   };
 
-  async _handleNewNotify(tNotify) {
-    let listString = await AsyncStorage.getItem('list_notifications')
-    console.log('begin handle');
-    let listNotify = JSON.parse(listString);
-    let notify = new NotifyPayload(tNotify.data);
-    if (listNotify && listNotify.length > 0) {
-      if (!listNotify.find(notif => notif.key == notify.key)) {
-        listNotify.push(notify);
-      }
-    } else {
-      listNotify = [notify];
+  _handleNewNotify(tNotify) {
+    console.log('handle new notify');
+    return new Promise((resolve, reject) => {
+      AsyncStorage.getItem('list_notifications').then((res) => {
+        let listNotify = JSON.parse(res);
+        let notify = new NotifyPayload(tNotify.data);
+        if (listNotify && listNotify.length > 0) {
+          if (!listNotify.find(notif => notif.key == notify.key)) {
+            listNotify.push(notify);
+          }
+        } else {
+          listNotify = [notify];
+        }
+        AsyncStorage.setItem('list_notifications', JSON.stringify(listNotify))
+        .then(resolve(true));
+      }).catch((error) => {
+        reject(error);
+      })
+    });
     }
-    await AsyncStorage.setItem('list_notifications', JSON.stringify(listNotify));
-    DeviceEventEmitter.emit('notifyChange', {type: 'add', data: {
-      key: notify.key
-    }});
-    this.getNewestNotifications();
-    console.log('Done in handle');
-  }
 
   componentDidMount() {
-    console.log('didmounttt');
+    console.log('didmount');
     // Check permission
     firebase.messaging().hasPermission()
       .then(enabled => {
         if (!enabled) {
           firebase.messaging().requestPermission()
           .then(() => {
-            console.log('subcribe after reqest permisssion');
-            firebase.messaging().subscribeToTopic('rain')
+            console.log('subcribe after request permisssion');
           })
           .catch(error => {
             console.log(error);
           });
-        } else {
-          firebase.messaging().subscribeToTopic('rain');
-          console.log('Subcribed!');
         }
       })
       .catch(error => {
@@ -72,7 +69,7 @@ class HomeScreen extends React.Component {
     this.messageListener = firebase.messaging().onMessage((message: RemoteMessage) => {
       // Process your message as required
      this._handleNewNotify(message)
-        .then(console.log('Done handle message'));
+        .then(this.getNewestNotifications());
     });
 
     // Check if App was opened by a notification
@@ -83,7 +80,8 @@ class HomeScreen extends React.Component {
           // const action = notificationOpen.action;
           const notification: Notification = notificationOpen.notification;
           firebase.notifications().removeDeliveredNotification(notification.notificationId);
-          this._handleNewNotify(notification);
+          this._handleNewNotify(notification)
+          .then(this.getNewestNotifications());
         }
       });
     if (Platform.OS == 'android') {
@@ -92,27 +90,32 @@ class HomeScreen extends React.Component {
     // Create the channel
     firebase.notifications().android.createChannel(channel);
   }
-  
+  this.notificationListener  = 123;
+  /*
   this.notificationListener = firebase.notifications().onNotification((notification: Notification) => {
     console.log('Process and display notification when app is opened');
     // Process notification as required
-    notification
-      .android.setChannelId('rain')
-      .android.setSmallIcon('ic_launcher');
-    firebase.notifications()
-      .displayNotification(notification);
+      notification
+        .android.setChannelId('rain')
+        .android.setSmallIcon('ic_launcher');
+      firebase.notifications()
+        .displayNotification(notification)
+        .catch(error => {
+          console.log(error);
+        });
   });
+  */
   }
   componentWillUnmount() {
-    DeviceEventEmitter.removeListener('notifyChange');
     this.backgroundNotifyListener();
-    this.notificationListener();
+    // this.notificationListener();
     this.messageListener();
     DeviceEventEmitter.removeAllListeners();
     this._isMounted = false;
   }
 
   getNewestNotifications(limit = 5) {
+    console.log('Get newest')
     AsyncStorage.getItem('list_notifications')
       .then(res => {
         if (res) {
@@ -126,24 +129,6 @@ class HomeScreen extends React.Component {
         }
       });
   }
-
-  _confirmResetNotify() {
-    Alert.alert(
-      'Confirm delete',
-      'Area you sure want to delete all notifications?',
-      [
-        {text: 'Cancel', onPress: () => {}, style: 'cancel'},
-        {text: 'OK', onPress: () => {this._resetNotify()}},
-      ],
-      { cancelable: false }
-    )
-  }
-
-  _resetNotify() {
-    AsyncStorage.setItem('list_notifications', '').then(() => {
-      DeviceEventEmitter.emit('notifyChange');
-    })
- }
 
   componentWillMount() {
     this.getNewestNotifications();
@@ -162,24 +147,35 @@ class HomeScreen extends React.Component {
               keyExtractor={(item) => item.key}
             />
             <View style={{flex: 1, flexDirection: 'row', justifyContent: 'center'}}>
-              <TouchableHighlight underlayColor="white" style={[bsStyle.btn, homeStyle.btn, bsStyle.btnSuccess]} onPress={() => navigate('List')}>
+              <TouchableHighlight underlayColor="#398439" style={[bsStyle.btn, homeStyle.btn, bsStyle.btnSuccess]} onPress={() => navigate('List')}>
                 <View style={bsStyle.textCenter}>
                   <Text style={bsStyle.cWhite}>See All</Text>
                 </View>
               </TouchableHighlight>
-              <TouchableHighlight underlayColor="white" style={[bsStyle.btn, homeStyle.btn, bsStyle.btnSuccess, homeStyle.btnReset]} onPress={() => this._confirmResetNotify()}>
+              <TouchableHighlight underlayColor="#c9302c" style={[bsStyle.btn, homeStyle.btn, homeStyle.btnSettings]} onPress={() => navigate('Settings')}>
                 <View style={bsStyle.textCenter}>
-                  <Text style={bsStyle.cWhite}>Reset</Text>
+                  <Text style={bsStyle.cWhite}>Settings</Text>
                 </View>
               </TouchableHighlight>
             </View>
           </View>
         )
       } else {
-        return (<View style={bsStyle.emptyStatusCover}><Text>You have no notification!</Text></View>)
+        return (<View style={bsStyle.emptyStatusCover}>
+        <Text style={{fontSize: 20}}>You have no notification!</Text>
+        <TouchableHighlight underlayColor="#c9302c" style={[bsStyle.btn, homeStyle.btn, homeStyle.btnSettings]} onPress={() => navigate('Settings')}>
+                <View style={bsStyle.textCenter}>
+                  <Text style={bsStyle.cWhite}>Settings</Text>
+                </View>
+              </TouchableHighlight>
+        </View>)
       }
     } else {
-      return (<View style={bsStyle.emptyStatusCover}><Text>Loading...</Text></View>)
+      return (
+      <View style={bsStyle.loading}>
+        <ActivityIndicator size='large' color='#00ff00' />
+      </View>
+      )
     }
   }
 }
@@ -191,7 +187,7 @@ var homeStyle = {
     height: 40,
     justifyContent: 'center'
   },
-  btnReset: {
+  btnSettings: {
     marginLeft: 20,
     backgroundColor: '#dc3545',
   }

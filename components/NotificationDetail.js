@@ -7,7 +7,8 @@ import {
   TouchableHighlight,
   Alert,
   Linking,
-  DeviceEventEmitter
+  DeviceEventEmitter,
+  ActivityIndicator
 } from 'react-native';
 
 import bsStyle from '../assets/BsStyle';
@@ -103,7 +104,6 @@ class NotificationDetailScreen extends React.Component {
               }}));
             }
           } else {
-            alert('This notify is deleted!');
             navigation.navigate('Home');
           }
         });
@@ -136,7 +136,9 @@ class NotificationDetailScreen extends React.Component {
         );
       } else {
         return (
-          <Text>Loading....</Text>
+          <View style={bsStyle.loading}>
+            <ActivityIndicator size='large' color='#00ff00' />
+          </View>
         )
       }
   }
