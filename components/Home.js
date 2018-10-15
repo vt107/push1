@@ -8,7 +8,7 @@ import { RemoteMessage } from 'react-native-firebase';
 
 import bsStyle from '../assets/BsStyle';
 
-class HomeScreen extends React.Component {
+export default class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -21,12 +21,12 @@ class HomeScreen extends React.Component {
   };
 
   async _handleNewNotify(tNotify) {
-    let listString = await AsyncStorage.getItem('list_notifications')
+    let listString = await AsyncStorage.getItem('list_notifications');
     console.log('begin handle');
     let listNotify = JSON.parse(listString);
     let notify = new NotifyPayload(tNotify.data);
     if (listNotify && listNotify.length > 0) {
-      if (!listNotify.find(notif => notif.key == notify.key)) {
+      if (!listNotify.find(notif => notif.key === notify.key)) {
         listNotify.push(notify);
       }
     } else {
@@ -42,27 +42,7 @@ class HomeScreen extends React.Component {
 
   componentDidMount() {
     console.log('didmounttt');
-    // Check permission
-    firebase.messaging().hasPermission()
-      .then(enabled => {
-        if (!enabled) {
-          firebase.messaging().requestPermission()
-          .then(() => {
-            console.log('subcribe after reqest permisssion');
-            firebase.messaging().subscribeToTopic('rain')
-          })
-          .catch(error => {
-            console.log(error);
-          });
-        } else {
-          firebase.messaging().subscribeToTopic('rain');
-          console.log('Subcribed!');
-        }
-      })
-      .catch(error => {
-        console.log(error);
-      });
-
+    /*
     DeviceEventEmitter.addListener('notifyChange', () => {
       if (this._isMounted) {
         this.getNewestNotifications();
@@ -86,7 +66,7 @@ class HomeScreen extends React.Component {
           this._handleNewNotify(notification);
         }
       });
-    if (Platform.OS == 'android') {
+    if (Platform.OS === 'android') {
     const channel = new firebase.notifications.Android.Channel('rain', 'Weather Rain', firebase.notifications.Android.Importance.Max)
       .setDescription('Get weather information info');
     // Create the channel
@@ -102,14 +82,18 @@ class HomeScreen extends React.Component {
     firebase.notifications()
       .displayNotification(notification);
   });
+
+    */
   }
   componentWillUnmount() {
+    /*
     DeviceEventEmitter.removeListener('notifyChange');
     this.backgroundNotifyListener();
     this.notificationListener();
     this.messageListener();
     DeviceEventEmitter.removeAllListeners();
     this._isMounted = false;
+    */
   }
 
   getNewestNotifications(limit = 5) {
@@ -162,12 +146,17 @@ class HomeScreen extends React.Component {
               keyExtractor={(item) => item.key}
             />
             <View style={{flex: 1, flexDirection: 'row', justifyContent: 'center'}}>
+              <TouchableHighlight underlayColor="white" style={[bsStyle.btn, homeStyle.btn, bsStyle.btnDanger]} onPress={() => navigate('Test')}>
+                <View style={bsStyle.textCenter}>
+                  <Text style={bsStyle.cWhite}>Test</Text>
+                </View>
+              </TouchableHighlight>
               <TouchableHighlight underlayColor="white" style={[bsStyle.btn, homeStyle.btn, bsStyle.btnSuccess]} onPress={() => navigate('List')}>
                 <View style={bsStyle.textCenter}>
                   <Text style={bsStyle.cWhite}>See All</Text>
                 </View>
               </TouchableHighlight>
-              <TouchableHighlight underlayColor="white" style={[bsStyle.btn, homeStyle.btn, bsStyle.btnSuccess, homeStyle.btnReset]} onPress={() => this._confirmResetNotify()}>
+              <TouchableHighlight underlayColor="white" style={[bsStyle.btn, homeStyle.btn, homeStyle.btnReset]} onPress={() => this._confirmResetNotify()}>
                 <View style={bsStyle.textCenter}>
                   <Text style={bsStyle.cWhite}>Reset</Text>
                 </View>
@@ -176,7 +165,14 @@ class HomeScreen extends React.Component {
           </View>
         )
       } else {
-        return (<View style={bsStyle.emptyStatusCover}><Text>You have no notification!</Text></View>)
+        return (<View style={bsStyle.emptyStatusCover}>
+          <Text>You have no notification!</Text>
+          <TouchableHighlight underlayColor="white" style={[bsStyle.btn, homeStyle.btn, bsStyle.btnDanger]} onPress={() => navigate('Test')}>
+            <View style={bsStyle.textCenter}>
+              <Text style={bsStyle.cWhite}>Test</Text>
+            </View>
+          </TouchableHighlight>
+        </View>)
       }
     } else {
       return (<View style={bsStyle.emptyStatusCover}><Text>Loading...</Text></View>)
@@ -184,7 +180,7 @@ class HomeScreen extends React.Component {
   }
 }
 
-var homeStyle = {
+let homeStyle = {
   btn: {
     marginTop: 10,
     width: 120,
@@ -195,6 +191,4 @@ var homeStyle = {
     marginLeft: 20,
     backgroundColor: '#dc3545',
   }
-}
-
-export default HomeScreen;
+};
