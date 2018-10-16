@@ -1,6 +1,8 @@
 import React from 'react';
-import { Switch, View, Text, FlatList, AsyncStorage } from 'react-native';
+import { Switch, View, Text, FlatList, AsyncStorage, ActivityIndicator } from 'react-native';
 import firebase from 'react-native-firebase';
+
+import bsStyle from '../assets/BsStyle';
 
 export default class SettingsScreen extends React.PureComponent {
   constructor(props) {
@@ -16,12 +18,14 @@ export default class SettingsScreen extends React.PureComponent {
       fetch('https://us-central1-testpush-2549f.cloudfunctions.net/getTopics')
         .then((response) => response.json())
         .then((responseJson) => {
+          console.log('Got result: ', responseJson);
           let topics = [];
           for (let key in responseJson) {
-            if (responseJson.hasOwnproperty(key)) {
+            if (typeof responseJson[key] !== 'function') {
               topics.push({key: key, text: responseJson[key]})
             }
           }
+          console.log('List topic from Network: ', topics);
           resolve(topics);
       })
         .catch((error) => {
@@ -86,7 +90,9 @@ export default class SettingsScreen extends React.PureComponent {
 
   render() {
     if (this.state.listTopic === false) {
-      return (<View><Text>adsfasfas</Text></View>)
+      return (<View style={bsStyle.loading}>
+      <ActivityIndicator size='large' color='#00ff00' />
+    </View>)
     } else {
       return (
         <View>

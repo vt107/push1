@@ -1,5 +1,5 @@
 import React from 'react';
-import {AsyncStorage, View, FlatList, ActivityIndicator, DeviceEventEmitter, TouchableHighlight, Text} from 'react-native';
+import {AsyncStorage, View, FlatList, ActivityIndicator, DeviceEventEmitter, TouchableHighlight, Text, Alert} from 'react-native';
 import RowNotify from './RowNotify';
 
 import bsStyle from '../assets/BsStyle';
@@ -65,6 +65,7 @@ class ListNotificationScreen extends React.Component {
   _resetNotify() {
     AsyncStorage.setItem('list_notifications', '').then(() => {
       DeviceEventEmitter.emit('notifyChange');
+      this.props.navigation.navigate('Home');
     })
  }
 

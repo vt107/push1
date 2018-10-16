@@ -33,6 +33,11 @@ export default class HomeScreen extends React.Component {
         } else {
           listNotify = [notify];
         }
+        let tList = listNotify;
+        if (listNotify.length > homeLimit) {
+          tList = listNotify.slice(1).slice(0 - homeLimit);
+        }
+        this.setState({listNotify: tList.reverse()})
         AsyncStorage.setItem('list_notifications', JSON.stringify(listNotify))
         .then(resolve(true));
       }).catch((error) => {
@@ -42,23 +47,15 @@ export default class HomeScreen extends React.Component {
     }
 
   componentDidMount() {
-    console.log('didmount');
-    // Check permission
     firebase.messaging().hasPermission()
-      .then(enabled => {
-        if (!enabled) {
-          firebase.messaging().requestPermission()
-          .then(() => {
-            console.log('subcribe after request permisssion');
-          })
-          .catch(error => {
-            console.log(error);
-          });
-        }
-      })
-      .catch(error => {
-        console.log(error);
-      });
+    .then(enabled => {
+      if (!enabled) {
+        firebase.messaging().requestPermission();
+      }
+    })
+    .catch(error => {
+      console.log(error);
+    });
 
     DeviceEventEmitter.addListener('notifyChange', () => {
       if (this._isMounted) {
@@ -69,7 +66,7 @@ export default class HomeScreen extends React.Component {
     this.messageListener = firebase.messaging().onMessage((message: RemoteMessage) => {
       // Process your message as required
      this._handleNewNotify(message)
-        .then(this.getNewestNotifications());
+        .then(console.log('handle done'))
     });
 
     // Check if App was opened by a notification
@@ -81,7 +78,7 @@ export default class HomeScreen extends React.Component {
           const notification: Notification = notificationOpen.notification;
           firebase.notifications().removeDeliveredNotification(notification.notificationId);
           this._handleNewNotify(notification)
-          .then(this.getNewestNotifications());
+          .then(console.log('handle done'));
         }
       });
     if (Platform.OS === 'android') {
@@ -90,10 +87,10 @@ export default class HomeScreen extends React.Component {
     // Create the channel
     firebase.notifications().android.createChannel(channel);
   }
-  this.notificationListener  = 123;
-  /*
+  
   this.notificationListener = firebase.notifications().onNotification((notification: Notification) => {
     console.log('Process and display notification when app is opened');
+    console.log('Mount: ', this._isMounted);
     // Process notification as required
       notification
         .android.setChannelId('rain')
@@ -104,25 +101,23 @@ export default class HomeScreen extends React.Component {
           console.log(error);
         });
   });
-  */
+  
   }
   componentWillUnmount() {
     this.backgroundNotifyListener();
-    // this.notificationListener();
+    this.notificationListener();
     this.messageListener();
     DeviceEventEmitter.removeAllListeners();
     this._isMounted = false;
-    */
   }
 
-  getNewestNotifications(limit = 5) {
-    console.log('Get newest')
+  getNewestNotifications() {
     AsyncStorage.getItem('list_notifications')
       .then(res => {
         if (res) {
           let listNotify = JSON.parse(res);
-          if (listNotify.length > limit) {
-            listNotify = listNotify.slice(1).slice(0 - limit);
+          if (listNotify.length > homeLimit) {
+            listNotify = listNotify.slice(1).slice(0 - homeLimit);
           }
           this.setState({listNotify: listNotify.reverse()})
         } else {
@@ -192,4 +187,6 @@ let homeStyle = {
     marginLeft: 20,
     backgroundColor: '#dc3545',
   }
-};
+}
+
+let homeLimit = 5;
