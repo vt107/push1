@@ -13,11 +13,20 @@ export default class SettingsScreen extends React.PureComponent {
 
   getListTopic() {
     return new Promise((resolve, reject) => {
-      resolve([
-        {key: 'rain', text: 'Japan Rain'},
-        {key: 'cloud', text: 'Japan Cloud'},
-        {key: 'wind', text: 'Japan Wind'},
-      ]);
+      fetch('https://us-central1-testpush-2549f.cloudfunctions.net/getTopics')
+        .then((response) => response.json())
+        .then((responseJson) => {
+          let topics = [];
+          for (let key in responseJson) {
+            if (responseJson.hasOwnproperty(key)) {
+              topics.push({key: key, text: responseJson[key]})
+            }
+          }
+          resolve(topics);
+      })
+        .catch((error) => {
+          reject(error);
+      });
     });
   }
 
