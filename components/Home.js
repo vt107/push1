@@ -159,11 +159,11 @@ export default class HomeScreen extends React.Component {
       } else {
         return (<View style={bsStyle.emptyStatusCover}>
         <Text style={{fontSize: 20}}>You have no notification!</Text>
-        <TouchableHighlight underlayColor="#c9302c" style={[bsStyle.btn, homeStyle.btn, homeStyle.btnSettings]} onPress={() => navigate('Settings')}>
-                <View style={bsStyle.textCenter}>
-                  <Text style={bsStyle.cWhite}>Settings</Text>
-                </View>
-              </TouchableHighlight>
+          <TouchableHighlight underlayColor="#c9302c" style={[bsStyle.btn, homeStyle.btn, homeStyle.btnSettings]} onPress={() => navigate('Settings')}>
+            <View style={bsStyle.textCenter}>
+              <Text style={bsStyle.cWhite}>Settings</Text>
+            </View>
+          </TouchableHighlight>
         </View>)
       }
     } else {

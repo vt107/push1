@@ -1,5 +1,5 @@
 import React from 'react';
-import { Switch, View, Text, FlatList, AsyncStorage, ActivityIndicator } from 'react-native';
+import { Switch, View, Text, FlatList, AsyncStorage, ActivityIndicator, NetInfo, TouchableHighlight } from 'react-native';
 import firebase from 'react-native-firebase';
 
 import bsStyle from '../assets/BsStyle';
@@ -9,44 +9,82 @@ export default class SettingsScreen extends React.PureComponent {
     super(props);
     this.state = {
       listTopic: false,
-      refresh: false
+      topicSubscribed: [],
+      refresh: false,
+      isOnline: true
     }
   }
 
-  getListTopic() {
+  getRemoteTopics() {
     return new Promise((resolve, reject) => {
-      fetch('https://us-central1-testpush-2549f.cloudfunctions.net/getTopics')
-        .then((response) => response.json())
-        .then((responseJson) => {
-          console.log('Got result: ', responseJson);
-          let topics = [];
-          for (let key in responseJson) {
-            if (typeof responseJson[key] !== 'function') {
-              topics.push({key: key, text: responseJson[key]})
+      if (this.state.isOnline) {
+        fetch('https://us-central1-testpush-2549f.cloudfunctions.net/getTopics')
+          .then((response) => response.json())
+          .then((responseJson) => {
+            console.log('Got result: ', responseJson);
+            let topics = [];
+            for (let key in responseJson) {
+              if (typeof responseJson[key] !== 'function') {
+                topics.push({key: key, text: responseJson[key]})
+              }
             }
-          }
-          console.log('List topic from Network: ', topics);
-          resolve(topics);
-      })
-        .catch((error) => {
-          reject(error);
-      });
+            console.log('List topic from Network: ', topics);
+            resolve(topics);
+        })
+          .catch((error) => {
+            reject(error);
+        });
+      } else {
+        alert('Cannot retrieve list Topic becase you\'re now offline!');
+        resolve([]);
+      }
     });
   }
 
+  getLocalTopics() {
+    return new Promise((resolve, reject) => {
+      AsyncStorage.getItem('list_topics')
+        .then(res => {
+          let localTopics = res? JSON.parse(res): [];
+          resolve(localTopics);
+        })
+        .catch(error => {
+          reject(error);
+        })
+    })
+  }
+
+  handleNetworkChange(connectionInfo) {
+    console.log('Network change detected, now is: ', connectionInfo.type);
+    this.setState({isOnline: connectionInfo.type !== 'none'})
+  }
+
   componentWillMount() {
-    AsyncStorage.getItem('topics')
+    NetInfo.getConnectionInfo().then((connectionInfo) => {
+      this.setState({isOnline: connectionInfo.type !== 'none'})
+    });
+    
+    NetInfo.addEventListener(
+      'connectionChange',
+      this.handleNetworkChange
+    );
+
+
+    AsyncStorage.getItem('subscribed_topics')
       .then(res => {
         let listSubscribed = res? JSON.parse(res): [];
-        console.log('list subscribed: ', listSubscribed);
-
-        this.getListTopic()
-          .then(listTopic => {
-            listTopic.forEach(topic => {
-              topic.subscribed = listSubscribed.indexOf(topic.key) !== -1;
-            });
-            this.setState({listTopic: listTopic})
-          });
+        this.setState({topicSubscribed: listSubscribed});
+        this.getLocalTopics().then(localTopics => {
+          if (localTopics.length > 0) {
+            this.setState({listTopic: this.filterTopic(localTopics, listSubscribed)});
+          } else {
+            this.getRemoteTopics()
+              .then(remoteTopics => {
+                this.setState({listTopic: this.filterTopic(remoteTopics, listSubscribed)});
+                AsyncStorage.setItem('list_topics', JSON.stringify(remoteTopics));
+              })
+          }
+        })
       });
 
     firebase.messaging().hasPermission()
@@ -63,20 +101,34 @@ export default class SettingsScreen extends React.PureComponent {
 
   }
 
+  componentDidMount() {
+    NetInfo.removeEventListener(
+      'connectionChange',
+      this.handleNetworkChange
+    );
+  }
+
+  filterTopic(currentList, listSubscribed) {
+    currentList.forEach(topic => {
+      topic.subscribed = listSubscribed.indexOf(topic.key) !== -1;
+    });
+    return currentList;
+  }
+
   _handleChange(key, value) {
-    if (key) {
+    if (key && this.state.isOnline) {
       let listTopic = this.state.listTopic;
       let foundIndex = listTopic.findIndex(x => x.key === key);
       if (foundIndex !== -1) listTopic[foundIndex].subscribed = value;
       this.setState({listTopic: listTopic});
       this.setState({refresh: !this.state.refresh});
 
-      // Update AsyncStorage
       let listSubsribed = [];
       listTopic.forEach(topic => {
         if (topic.subscribed) listSubsribed.push(topic.key);
       });
-      AsyncStorage.setItem('topics', JSON.stringify(listSubsribed));
+      AsyncStorage.setItem('subscribed_topics', JSON.stringify(listSubsribed));
+      this.setState({topicSubscribed: listSubsribed});
 
       if (value) {
         firebase.messaging().subscribeToTopic(key);
@@ -85,7 +137,17 @@ export default class SettingsScreen extends React.PureComponent {
         firebase.messaging().unsubscribeFromTopic(key);
         console.log('UnSubscribed from topic: ', key);
       }
+    } else {
+      alert('Request rejected, you\'re now offline!');
     }
+  }
+
+  updateTopicFromRemote() {
+    this.getRemoteTopics()
+      .then(remoteTopics => {
+        this.setState({listTopic: this.filterTopic(remoteTopics, this.state.topicSubscribed)});
+        AsyncStorage.setItem('list_topics', JSON.stringify(remoteTopics));
+      })
   }
 
   render() {
@@ -106,10 +168,16 @@ export default class SettingsScreen extends React.PureComponent {
             }
             extraData={this.state}
           />
+          <View style={{alignItems: 'center', marginTop: 10}}>
+            <TouchableHighlight underlayColor="#398439" onPress={() => this.updateTopicFromRemote()}>
+              <View style={[bsStyle.btn, bsStyle.btnSuccess]}>
+                <Text style={bsStyle.btnText}>Update Topics</Text>
+              </View>
+            </TouchableHighlight>
+          </View>
         </View>
       )
     }
-
   }
 }
 

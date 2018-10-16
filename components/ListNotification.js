@@ -81,12 +81,12 @@ class ListNotificationScreen extends React.Component {
             keyExtractor={(item) => item.key}
           />
           <View style={{alignItems: 'center', marginTop: 10}}>
-              <TouchableHighlight underlayColor="white" onPress={() => this._confirmResetNotify()}>
-                <View style={[bsStyle.btn, bsStyle.btnDanger]}>
-                  <Text style={bsStyle.btnText}>Reset</Text>
-                </View>
-              </TouchableHighlight>
-            </View>
+            <TouchableHighlight underlayColor="white" onPress={() => this._confirmResetNotify()}>
+              <View style={[bsStyle.btn, bsStyle.btnDanger]}>
+                <Text style={bsStyle.btnText}>Reset</Text>
+              </View>
+            </TouchableHighlight>
+          </View>
         </View>
       );
     } else {
