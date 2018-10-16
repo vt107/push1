@@ -1,5 +1,5 @@
 import React from 'react';
-import { Switch, View, Text, FlatList, AsyncStorage, ActivityIndicator, NetInfo, TouchableHighlight } from 'react-native';
+import { Switch, View, Text, FlatList, AsyncStorage, ActivityIndicator, NetInfo, TouchableHighlight, Alert, Modal } from 'react-native';
 import firebase from 'react-native-firebase';
 
 import bsStyle from '../assets/BsStyle';
@@ -11,7 +11,8 @@ export default class SettingsScreen extends React.PureComponent {
       listTopic: false,
       topicSubscribed: [],
       refresh: false,
-      isOnline: true
+      isOnline: true,
+      isLoading: false
     }
   }
 
@@ -21,22 +22,19 @@ export default class SettingsScreen extends React.PureComponent {
         fetch('https://us-central1-testpush-2549f.cloudfunctions.net/getTopics')
           .then((response) => response.json())
           .then((responseJson) => {
-            console.log('Got result: ', responseJson);
             let topics = [];
             for (let key in responseJson) {
               if (typeof responseJson[key] !== 'function') {
                 topics.push({key: key, text: responseJson[key]})
               }
             }
-            console.log('List topic from Network: ', topics);
             resolve(topics);
         })
           .catch((error) => {
             reject(error);
         });
       } else {
-        alert('Cannot retrieve list Topic becase you\'re now offline!');
-        resolve([]);
+        reject('Cannot retrieve list Topic becase you\'re now offline!')
       }
     });
   }
@@ -54,21 +52,10 @@ export default class SettingsScreen extends React.PureComponent {
     })
   }
 
-  handleNetworkChange(connectionInfo) {
-    console.log('Network change detected, now is: ', connectionInfo.type);
-    this.setState({isOnline: connectionInfo.type !== 'none'})
-  }
-
   componentWillMount() {
     NetInfo.getConnectionInfo().then((connectionInfo) => {
       this.setState({isOnline: connectionInfo.type !== 'none'})
     });
-    
-    NetInfo.addEventListener(
-      'connectionChange',
-      this.handleNetworkChange
-    );
-
 
     AsyncStorage.getItem('subscribed_topics')
       .then(res => {
@@ -80,8 +67,11 @@ export default class SettingsScreen extends React.PureComponent {
           } else {
             this.getRemoteTopics()
               .then(remoteTopics => {
-                this.setState({listTopic: this.filterTopic(remoteTopics, listSubscribed)});
-                AsyncStorage.setItem('list_topics', JSON.stringify(remoteTopics));
+                  this.setState({listTopic: this.filterTopic(remoteTopics, listSubscribed)});
+                  AsyncStorage.setItem('list_topics', JSON.stringify(remoteTopics));
+              })
+              .catch(error => {
+                this.setState({listTopic: []});
               })
           }
         })
@@ -98,14 +88,23 @@ export default class SettingsScreen extends React.PureComponent {
       .catch(error => {
         console.log(error);
       });
-
   }
 
   componentDidMount() {
-    NetInfo.removeEventListener(
-      'connectionChange',
-      this.handleNetworkChange
+    this._isMounted = true;
+    NetInfo.addEventListener(
+      'connectionChange', (connectionInfo => {
+        console.log('Change');
+        if (this._isMounted) {
+          this.setState({isOnline: connectionInfo.type !== 'none'})
+        }
+      })
     );
+  }
+
+  componentWillUnmount() {
+    this._isMounted = false;
+    NetInfo.removeEventListener('connectionChange');
   }
 
   filterTopic(currentList, listSubscribed) {
@@ -132,21 +131,24 @@ export default class SettingsScreen extends React.PureComponent {
 
       if (value) {
         firebase.messaging().subscribeToTopic(key);
-        console.log('Subscribed to topic: ', key);
       } else {
         firebase.messaging().unsubscribeFromTopic(key);
-        console.log('UnSubscribed from topic: ', key);
       }
     } else {
-      alert('Request rejected, you\'re now offline!');
+      Alert.alert('Error', 'Request rejected because you\'re now offline!');
     }
   }
 
   updateTopicFromRemote() {
+    this.setState({isLoading: true});
     this.getRemoteTopics()
       .then(remoteTopics => {
-        this.setState({listTopic: this.filterTopic(remoteTopics, this.state.topicSubscribed)});
-        AsyncStorage.setItem('list_topics', JSON.stringify(remoteTopics));
+          this.setState({listTopic: this.filterTopic(remoteTopics, this.state.topicSubscribed)});
+          this.setState({isLoading: false});
+          AsyncStorage.setItem('list_topics', JSON.stringify(remoteTopics));
+      })
+      .catch(error => {
+        Alert.alert('Error', error);
       })
   }
 
@@ -174,6 +176,20 @@ export default class SettingsScreen extends React.PureComponent {
                 <Text style={bsStyle.btnText}>Update Topics</Text>
               </View>
             </TouchableHighlight>
+          </View>
+          <View>
+              <Modal
+              animationType="slide"
+              transparent={true}
+              visible={this.state.isLoading}
+              onRequestClose={() => {}}>
+              <View style={{backgroundColor: '#00000040', flex: 1, alignItems: 'center', flexDirection: 'column', justifyContent: 'space-around'}}>
+                <View style={{ height: 100, width: 100, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-around', backgroundColor: '#FFFFFF'}}>
+                <ActivityIndicator size='large' color='#00ff00' />
+                </View>
+              </View>
+            </Modal>
+
           </View>
         </View>
       )

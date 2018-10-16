@@ -1,5 +1,5 @@
 import React from 'react';
-import {AsyncStorage, View, Text, TouchableHighlight, Alert, FlatList, DeviceEventEmitter, Platform, ActivityIndicator} from 'react-native';
+import {AsyncStorage, View, Text, TouchableHighlight, FlatList, DeviceEventEmitter, Platform, ActivityIndicator} from 'react-native';
 import firebase from 'react-native-firebase';
 import { Notification, NotificationOpen } from 'react-native-firebase';
 import NotifyPayload from './NotifyPayload';
@@ -37,8 +37,8 @@ export default class HomeScreen extends React.Component {
         if (listNotify.length > homeLimit) {
           tList = listNotify.slice(1).slice(0 - homeLimit);
         }
-        this.setState({listNotify: tList.reverse()})
-        AsyncStorage.setItem('list_notifications', JSON.stringify(listNotify))
+        this.setState({listNotify: this.sortByTime(tList)})
+        AsyncStorage.setItem('list_notifications', JSON.stringify(this.sortByTime(listNotify)))
         .then(resolve(true));
       }).catch((error) => {
         reject(error);
@@ -101,7 +101,6 @@ export default class HomeScreen extends React.Component {
           console.log(error);
         });
   });
-  
   }
   componentWillUnmount() {
     this.backgroundNotifyListener();
@@ -109,6 +108,13 @@ export default class HomeScreen extends React.Component {
     this.messageListener();
     DeviceEventEmitter.removeAllListeners();
     this._isMounted = false;
+  }
+
+  sortByTime(data) {
+    data.sort((a, b) => {
+      return b.time.localeCompare(a.time);
+    });
+    return data;
   }
 
   getNewestNotifications() {
@@ -119,7 +125,7 @@ export default class HomeScreen extends React.Component {
           if (listNotify.length > homeLimit) {
             listNotify = listNotify.slice(1).slice(0 - homeLimit);
           }
-          this.setState({listNotify: listNotify.reverse()})
+          this.setState({listNotify: this.sortByTime(listNotify)})
         } else {
           this.setState({listNotify: []});
         }

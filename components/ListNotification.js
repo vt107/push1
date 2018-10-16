@@ -18,7 +18,7 @@ class ListNotificationScreen extends React.Component {
       if (value !== null) {
         let listNotify = JSON.parse(value);
         if (listNotify.length > 0) {
-          this.setState({listNotify: listNotify.reverse()})
+          this.setState({listNotify: this.sortByTime(listNotify)})
         } else {
           this.props.navigation.navigate('Home');
         }
@@ -60,6 +60,13 @@ class ListNotificationScreen extends React.Component {
       ],
       { cancelable: false }
     )
+  }
+
+  sortByTime(data) {
+    data.sort((a, b) => {
+      return b.time.localeCompare(a.time);
+    });
+    return data;
   }
 
   _resetNotify() {
