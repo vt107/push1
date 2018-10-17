@@ -2,7 +2,6 @@ import {StyleSheet} from 'react-native';
 
 const bsStyle = StyleSheet.create({
   btn: {
-    marginBottom: 5,
     minWidth: 100,
     alignItems: 'center',
     borderRadius: 2
