@@ -82,16 +82,17 @@ export default class HomeScreen extends React.Component {
         }
       });
     if (Platform.OS === 'android') {
-    const channel = new firebase.notifications.Android.Channel('rain', 'Weather Rain', firebase.notifications.Android.Importance.Max)
-      .setDescription('Get weather information info');
-    // Create the channel
-    firebase.notifications().android.createChannel(channel);
+      const channel = new firebase.notifications.Android.Channel('rain', 'Weather Rain', firebase.notifications.Android.Importance.Max)
+        .setDescription('Get weather information info');
+      // Create the channel
+      firebase.notifications().android.createChannel(channel);
   }
   
   this.notificationListener = firebase.notifications().onNotification((notification: Notification) => {
     console.log('Process and display notification when app is opened');
     console.log('Mount: ', this._isMounted);
     // Process notification as required
+    if (!this._isMounted) {
       notification
         .android.setChannelId('rain')
         .android.setSmallIcon('ic_launcher');
@@ -100,6 +101,8 @@ export default class HomeScreen extends React.Component {
         .catch(error => {
           console.log(error);
         });
+    }
+      
   });
   }
   componentWillUnmount() {
